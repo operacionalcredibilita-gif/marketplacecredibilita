@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Marketplace Credibilita</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,450;9..144,560;9..144,650;9..144,750&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- Firebase SDK — mesmo projeto do site de Ranking, área separada ("marketplace/") -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDdummyplaceholderkey000000000",
+    authDomain: "sitebcred.firebaseapp.com",
+    databaseURL: "https://sitebcred-default-rtdb.firebaseio.com",
+    projectId: "sitebcred",
+    storageBucket: "sitebcred.appspot.com",
+    messagingSenderId: "000000000000",
+    appId: "1:000000000000:web:0000000000000000000000"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+
+  function marcarStatusConexao(msg, classe){
+    const el=document.getElementById('firebase-status');
+    if(el){ el.innerHTML='<span class="dot"></span> '+msg; el.className='firebase-status '+(classe||''); }
+  }
+  onValue(ref(db, '.info/connected'), snap => {
+    marcarStatusConexao(snap.val() ? 'Conectado • sincronizado' : 'Sem conexão — reconectando…', snap.val() ? 'ok' : 'off');
+  });
+
+  window.fbSalvar = function(chave, dados){
+    return set(ref(db, chave), dados)
+      .then(()=>({ok:true}))
+      .catch(err=>{ console.error('Erro ao salvar ('+chave+'):', err); return {ok:false, err}; });
+  };
+  window.fbCarregar = function(chave){
+    return get(ref(db, chave)).then(snap=>snap.exists()?snap.val():null);
+  };
+  window.fbEscutar = function(chave, callback){
+    onValue(ref(db, chave), snap => callback(snap.exists()?snap.val():null));
+  };
+</script>
+
+<style>
+:root{
+  --bg:#09090a;
+  --card:#17150f;
+  --card2:#1c1c19;
+  --gold:#b8972a;
+  --gold-light:#e9c873;
+  --ivory:#efe6d3;
+  --muted:#948d7b;
+  --green:#4f9e6d;
+  --red:#c15d52;
+  --border:rgba(233,200,115,.14);
+  --radius:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  color:var(--ivory);
+  min-height:100vh;
+  background:
+    radial-gradient(ellipse 900px 500px at 15% -10%, rgba(184,151,42,.10), transparent 60%),
+    radial-gradient(ellipse 700px 500px at 110% 10%, rgba(184,151,42,.07), transparent 55%),
+    var(--bg);
+  padding-bottom:60px;
+}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.035;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-thumb{background:#2a2a24;border-radius:8px;}
+::selection{background:rgba(233,200,115,.3);}
+
+a{color:inherit;}
+h1,h2,h3{font-family:'Fraunces',Georgia,serif;font-weight:600;}
+.num{font-family:'Fraunces',Georgia,serif;font-variant-numeric:tabular-nums;}
+
+/* ─── Login ─── */
+#login-overlay{
+  position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse 1200px 700px at 50% 0%, rgba(184,151,42,.08), transparent 60%), #060606;
+  backdrop-filter:blur(3px);
+}
+.login-box{
+  width:min(400px,90vw);padding:40px 34px;border-radius:20px;text-align:center;
+  background:linear-gradient(160deg,#1c1c19,#111110);
+  box-shadow:0 25px 70px rgba(0,0,0,.6),0 0 0 1px rgba(255,216,106,.08);
+  border:1px solid var(--border);
+  animation:loginIn .45s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes loginIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.login-logo{font-size:40px;margin-bottom:6px;filter:drop-shadow(0 4px 14px rgba(255,216,106,.35));}
+.login-title{font-family:'Fraunces',Georgia,serif;font-weight:650;font-size:24px;
+  background:linear-gradient(120deg,#fff1ad,var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent;}
+.login-sub{color:var(--muted);font-size:13px;margin-top:4px;margin-bottom:26px;letter-spacing:.02em;}
+.login-field{
+  width:100%;padding:13px 14px;margin-bottom:12px;border-radius:10px;border:1px solid #34342c;
+  background:#141412;color:var(--ivory);font-family:'Inter';font-size:14px;
+}
+.login-field:focus{outline:none;border-color:var(--gold-light);}
+.login-btn{
+  width:100%;padding:13px;border:none;border-radius:10px;margin-top:8px;cursor:pointer;
+  text-transform:uppercase;letter-spacing:.08em;font-size:12px;font-weight:800;
+  background:linear-gradient(135deg,var(--gold-light),var(--gold));color:#161408;
+  box-shadow:0 10px 24px rgba(184,151,42,.25),inset 0 1px rgba(255,255,255,.35);
+  transition:transform .2s ease,box-shadow .2s ease;
+}
+.login-btn:hover{transform:translateY(-1px);box-shadow:0 14px 30px rgba(184,151,42,.32);}
+.login-erro{color:#ff9b9b;font-size:12.5px;margin-top:12px;min-height:16px;}
+
+/* ─── Shell ─── */
+#app{max-width:1180px;margin:0 auto;padding:0 18px;display:none;}
+.header{
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;
+  padding:22px 6px 18px;position:relative;z-index:1;
+}
+.header-left .brand{
+  font-family:'Fraunces',Georgia,serif;font-weight:650;font-size:25px;letter-spacing:-.01em;
+  background:linear-gradient(120deg,#fff1ad,var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.header-left .tagline{color:var(--muted);font-size:12.5px;margin-top:2px;font-style:italic;}
+.firebase-status{display:inline-flex;align-items:center;gap:.45rem;margin-top:8px;padding:.32rem .68rem;border:1px solid rgba(110,220,150,.22);border-radius:999px;background:rgba(70,180,110,.07);color:#8ee5a9;font-size:.7rem;font-weight:700;}
+.firebase-status.off{border-color:rgba(230,120,80,.3);background:rgba(120,60,20,.12);color:#f0b78e;}
+.firebase-status .dot{width:6px;height:6px;border-radius:50%;background:#5ddd5d;animation:dotPulse 2s ease-in-out infinite;}
+.firebase-status.off .dot{background:#e8935a;}
+@keyframes dotPulse{0%{box-shadow:0 0 0 0 rgba(93,221,93,.5)}70%{box-shadow:0 0 0 6px rgba(93,221,93,0)}100%{box-shadow:0 0 0 0 rgba(93,221,93,0)}}
+
+.header-right{display:flex;align-items:center;gap:12px;}
+#user-badge{
+  padding:8px 14px;border-radius:999px;border:1px solid var(--border);background:var(--card2);
+  font-size:12.5px;color:var(--gold-light);font-weight:700;display:flex;align-items:center;gap:8px;
+}
+#user-badge button{
+  background:none;border:none;color:var(--muted);font-family:'Inter';font-size:11.5px;cursor:pointer;
+  text-decoration:underline;text-underline-offset:2px;
+}
+#user-badge button:hover{color:var(--ivory);}
+
+.tabs{
+  display:flex;gap:4px;overflow-x:auto;padding:4px;background:#0e0e0c;border-radius:14px;
+  border:1px solid var(--border);margin-bottom:22px;
+}
+.tab-btn{
+  flex:1 0 auto;padding:11px 16px;border:none;background:none;color:#6b675d;cursor:pointer;border-radius:10px;
+  font-family:'Inter';letter-spacing:.03em;text-transform:uppercase;font-size:10.8px;font-weight:700;
+  white-space:nowrap;transition:background .2s ease,color .2s ease;
+}
+.tab-btn:hover{color:var(--ivory);}
+.tab-btn.active{background:linear-gradient(135deg,var(--gold-light),var(--gold));color:#161408;}
+
+.view{display:none;animation:viewFade .38s cubic-bezier(.2,.8,.2,1);}
+.view.active{display:block;}
+@keyframes viewFade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+.card{
+  background:linear-gradient(160deg,var(--card2),#161613);border:1px solid var(--border);border-radius:var(--radius);
+  padding:22px;box-shadow:0 10px 25px rgba(0,0,0,.22);
+}
+
+/* ─── Dashboard ─── */
+.hero-saldo{
+  background:linear-gradient(150deg,#1f1c12,#141210 60%),radial-gradient(ellipse 400px 200px at 90% 0%,rgba(184,151,42,.18),transparent);
+  border:1px solid rgba(233,200,115,.22);border-radius:20px;padding:30px 28px;position:relative;overflow:hidden;
+  box-shadow:0 20px 50px rgba(0,0,0,.35);
+}
+.hero-saldo::after{
+  content:'';position:absolute;top:-40%;right:-10%;width:280px;height:280px;border-radius:50%;
+  background:radial-gradient(circle,rgba(233,200,115,.12),transparent 70%);pointer-events:none;
+}
+.hero-label{color:var(--muted);text-transform:uppercase;letter-spacing:.12em;font-size:11.5px;font-weight:700;}
+.hero-valor{
+  font-family:'Fraunces',Georgia,serif;font-weight:650;font-size:52px;letter-spacing:-.02em;margin-top:6px;
+  color:var(--gold-light);text-shadow:0 0 30px rgba(233,200,115,.2);
+}
+.hero-valor .unidade{font-size:20px;color:var(--muted);font-family:'Inter';font-weight:600;margin-left:6px;}
+.hero-sub{color:var(--muted);font-size:13.5px;margin-top:10px;}
+.hero-sub strong{color:var(--ivory);}
+.value-pulse{animation:valuePulse .6s ease;}
+@keyframes valuePulse{0%{transform:scale(1)}40%{transform:scale(1.07);color:#fff1ad}100%{transform:scale(1)}}
+
+.grid-2{display:grid;grid-template-columns:1.3fr 1fr;gap:18px;margin-top:18px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+@media(max-width:820px){.grid-2{grid-template-columns:1fr;} .grid-3{grid-template-columns:1fr;}}
+
+.stat-mini{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;}
+.stat-mini .lbl{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;}
+.stat-mini .val{font-family:'Fraunces',Georgia,serif;font-size:22px;color:var(--ivory);margin-top:4px;font-variant-numeric:tabular-nums;}
+
+.progress-next{margin-top:18px;}
+.progress-next .row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+.progress-next .prod{font-weight:700;color:var(--ivory);}
+.progress-next .falta{color:var(--gold-light);font-size:13px;font-weight:700;}
+.bar-track{height:12px;background:#0e0e0c;border-radius:999px;overflow:hidden;border:1px solid #2a2a24;position:relative;}
+.bar-fill{height:100%;border-radius:999px;position:relative;overflow:hidden;background:linear-gradient(90deg,var(--gold),var(--gold-light));transition:width .6s cubic-bezier(.2,.8,.2,1);}
+.bar-fill::after{content:'';position:absolute;inset:0;width:40%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);animation:barShine 2.6s ease-in-out infinite;}
+@keyframes barShine{0%{transform:translateX(-120%)}100%{transform:translateX(320%)}}
+
+.btn-registrar{
+  display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:16px;margin-top:20px;
+  border:none;border-radius:14px;cursor:pointer;font-family:'Inter';font-weight:800;font-size:14px;
+  text-transform:uppercase;letter-spacing:.06em;
+  background:linear-gradient(135deg,var(--gold-light),var(--gold));color:#161408;
+  box-shadow:0 14px 30px rgba(184,151,42,.28),inset 0 1px rgba(255,255,255,.35);
+  transition:transform .2s ease,box-shadow .2s ease;
+}
+.btn-registrar:hover{transform:translateY(-2px);box-shadow:0 18px 38px rgba(184,151,42,.35);}
+.btn-registrar:active{transform:translateY(0);}
+
+.mini-rank{display:flex;flex-direction:column;gap:8px;margin-top:6px;}
+.mini-rank-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;background:var(--card);border:1px solid var(--border);}
+.mini-rank-item .pos{width:24px;text-align:center;font-size:15px;}
+.mini-rank-item .nm{flex:1;font-weight:600;font-size:13.5px;}
+.mini-rank-item .pt{font-family:'Fraunces',Georgia,serif;color:var(--gold-light);font-size:13.5px;font-variant-numeric:tabular-nums;}
+.mini-rank-item.eu{border-color:rgba(233,200,115,.4);background:linear-gradient(135deg,rgba(233,200,115,.08),transparent);}
+
+.venda-item{
+  display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:10px;
+  background:var(--card);border:1px solid var(--border);margin-bottom:8px;font-size:13.5px;
+}
+.venda-item .info{display:flex;flex-direction:column;gap:2px;}
+.venda-item .cliente{font-weight:700;color:var(--ivory);}
+.venda-item .meta{color:var(--muted);font-size:11.5px;}
+.venda-item .pts{font-family:'Fraunces',Georgia,serif;color:#7edc9c;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.venda-item.cancelada{opacity:.5;}
+.venda-item.cancelada .pts{color:var(--muted);text-decoration:line-through;}
+.venda-item .neg{color:#ff9b9b;}
+
+.section-label{letter-spacing:.1em;color:var(--muted);font-family:'Inter';text-transform:uppercase;font-size:11px;font-weight:700;margin-bottom:12px;}
+
+/* ─── Marketplace ─── */
+.market-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px;margin-top:16px;}
+.prod-card{
+  background:linear-gradient(165deg,var(--card2),#151512);border:1px solid var(--border);border-radius:18px;
+  overflow:hidden;display:flex;flex-direction:column;transition:transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s ease,border-color .25s ease;
+  position:relative;
+}
+.prod-card:hover{transform:translateY(-4px);box-shadow:0 20px 40px rgba(0,0,0,.35);border-color:rgba(233,200,115,.3);}
+.prod-card.bloqueado{filter:grayscale(.6);opacity:.72;}
+.prod-card.bloqueado:hover{transform:none;}
+.prod-img{
+  height:150px;display:flex;align-items:center;justify-content:center;position:relative;
+  background:radial-gradient(ellipse at 50% 30%,rgba(233,200,115,.14),transparent 70%),#111110;
+}
+.prod-img svg{width:84px;height:84px;}
+.prod-lock-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(6,6,5,.55);font-size:30px;}
+.prod-body{padding:16px 16px 18px;display:flex;flex-direction:column;gap:8px;flex:1;}
+.prod-nome{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:17px;color:var(--ivory);}
+.prod-pontos{font-family:'Fraunces',Georgia,serif;color:var(--gold-light);font-size:15px;font-variant-numeric:tabular-nums;}
+.prod-falta{color:var(--muted);font-size:11.5px;}
+.prod-estoque{font-size:11px;color:var(--muted);}
+.prod-btn{
+  margin-top:auto;padding:11px;border:none;border-radius:10px;cursor:pointer;font-weight:800;font-size:12px;
+  text-transform:uppercase;letter-spacing:.06em;font-family:'Inter';
+  background:linear-gradient(135deg,var(--gold-light),var(--gold));color:#161408;
+  transition:transform .2s ease;
+}
+.prod-btn:hover{transform:translateY(-1px);}
+.prod-btn:disabled{background:#2a2a24;color:#77746a;cursor:not-allowed;transform:none;}
+.badge-esgotado{position:absolute;top:12px;right:12px;background:#c15d52;color:#fff;font-size:10px;font-weight:800;padding:4px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.05em;}
+.badge-novo{position:absolute;top:12px;left:12px;background:var(--gold-light);color:#161408;font-size:10px;font-weight:800;padding:4px 9px;border-radius:999px;text-transform:uppercase;}
+
+/* ─── Níveis / progressão ─── */
+.niveis{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
+.nivel-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:var(--card);border:1px solid var(--border);}
+.nivel-row.desbloqueado{border-color:rgba(126,220,156,.3);}
+.nivel-icone{width:38px;height:38px;flex-shrink:0;}
+.nivel-icone svg{width:100%;height:100%;}
+.nivel-info{flex:1;}
+.nivel-nome{font-weight:700;font-size:13.5px;}
+.nivel-pts{color:var(--muted);font-size:11.5px;}
+.nivel-status{font-size:18px;}
+
+/* ─── Duplas / Ranking ─── */
+.duo-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:14px;}
+.duo-nomes{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:16px;color:var(--ivory);}
+.duo-progress{margin-top:10px;}
+.duo-row{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);margin-bottom:6px;}
+.duo-pct{color:var(--gold-light);font-weight:700;}
+
+.rank-item{
+  display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;margin-bottom:10px;
+  background:linear-gradient(160deg,#1c1c19,#161613);border:1px solid rgba(255,255,255,.07);position:relative;
+}
+.rank-badge{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;background:#0e0e0c;border:1px solid var(--border);flex-shrink:0;}
+.rank-item.primeiro{border-color:rgba(255,216,106,.4);}
+.rank-item.primeiro::before{
+  content:'';position:absolute;inset:0;border-radius:14px;padding:1px;
+  background:linear-gradient(120deg,#f6e6b4,#b8972a,#f6e6b4);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;opacity:.65;pointer-events:none;
+}
+.rank-item.primeiro .rank-badge{
+  background:radial-gradient(circle at 34% 28%,rgba(255,255,255,.65),transparent 42%),
+    conic-gradient(from 205deg,#f6e6b4,#b8972a,#7c5f16,#e9c873,#f6e6b4);
+  box-shadow:0 0 0 2px #0c0c0a,0 0 0 3px rgba(233,200,115,.5);
+}
+.rank-nome{flex:1;font-weight:700;font-size:14.5px;}
+.rank-item.primeiro .rank-nome{color:var(--gold-light);}
+.rank-pts{font-family:'Fraunces',Georgia,serif;color:var(--gold-light);font-size:15px;font-variant-numeric:tabular-nums;}
+
+/* ─── Modais ─── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(4,4,3,.72);backdrop-filter:blur(2px);z-index:300;
+  display:none;align-items:center;justify-content:center;padding:16px;
+}
+.modal-overlay.active{display:flex;animation:fadeInBg .25s ease;}
+@keyframes fadeInBg{from{opacity:0}to{opacity:1}}
+.modal-box{
+  width:min(460px,94vw);max-height:88vh;overflow-y:auto;background:linear-gradient(160deg,#1c1c19,#131311);
+  border:1px solid var(--border);border-radius:18px;padding:26px;box-shadow:0 30px 70px rgba(0,0,0,.55);
+  animation:modalIn .3s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes modalIn{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.modal-title{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:20px;margin-bottom:4px;}
+.modal-sub{color:var(--muted);font-size:12.5px;margin-bottom:20px;}
+.field-group{margin-bottom:14px;}
+.field-group label{display:block;color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:6px;}
+.field-group input,.field-group select,.field-group textarea{
+  width:100%;padding:11px 13px;border-radius:9px;border:1px solid #34342c;background:#141412;
+  color:var(--ivory);font-family:'Inter';font-size:14px;
+}
+.field-group input:focus,.field-group select:focus,.field-group textarea:focus{outline:none;border-color:var(--gold-light);}
+.field-group textarea{resize:vertical;min-height:60px;}
+.modal-actions{display:flex;gap:10px;margin-top:20px;}
+.btn-ghost{flex:1;padding:12px;border-radius:10px;border:1px solid #3a3a34;background:transparent;color:var(--muted);cursor:pointer;font-weight:700;font-size:13px;font-family:'Inter';}
+.btn-ghost:hover{color:var(--ivory);border-color:#54544a;}
+.btn-primario{flex:1;padding:12px;border-radius:10px;border:none;cursor:pointer;font-weight:800;font-size:13px;font-family:'Inter';text-transform:uppercase;letter-spacing:.04em;background:linear-gradient(135deg,var(--gold-light),var(--gold));color:#161408;}
+.btn-primario:hover{transform:translateY(-1px);}
+.confirma-resumo{background:var(--card);border-radius:12px;padding:16px;margin:16px 0;}
+.confirma-linha{display:flex;justify-content:space-between;font-size:13.5px;padding:6px 0;color:var(--muted);}
+.confirma-linha strong{color:var(--ivory);}
+.confirma-linha.total{border-top:1px solid var(--border);margin-top:6px;padding-top:12px;}
+.confirma-linha.total strong{color:var(--gold-light);font-family:'Fraunces',Georgia,serif;font-size:16px;}
+
+/* ─── Toasts / notificações ─── */
+#toast-wrap{position:fixed;top:18px;right:18px;z-index:400;display:flex;flex-direction:column;gap:10px;max-width:320px;}
+.toast{
+  background:linear-gradient(160deg,#1c1c19,#141210);border:1px solid rgba(233,200,115,.3);border-radius:12px;
+  padding:14px 16px;box-shadow:0 15px 35px rgba(0,0,0,.4);font-size:13px;
+  animation:toastIn .3s cubic-bezier(.2,.8,.2,1);
+}
+.toast.erro{border-color:rgba(224,85,85,.5);}
+.toast .t-titulo{font-weight:800;color:var(--gold-light);margin-bottom:2px;}
+.toast.erro .t-titulo{color:#ff9b9b;}
+.toast .t-corpo{color:var(--muted);}
+@keyframes toastIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+@keyframes toastOut{to{opacity:0;transform:translateX(30px)}}
+
+/* confete simples */
+.confete{position:fixed;top:-10px;width:8px;height:14px;border-radius:2px;z-index:500;pointer-events:none;animation:cair linear forwards;}
+@keyframes cair{to{transform:translateY(105vh) rotate(600deg);opacity:.2;}}
+
+/* ─── Admin ─── */
+.admin-tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
+.admin-tab-btn{padding:8px 14px;border-radius:9px;border:1px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;font-size:12px;font-weight:700;font-family:'Inter';}
+.admin-tab-btn.active{background:linear-gradient(135deg,var(--gold-light),var(--gold));color:#161408;border-color:transparent;}
+.admin-view{display:none;}
+.admin-view.active{display:block;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+table th{text-align:left;color:var(--muted);text-transform:uppercase;font-size:10.5px;letter-spacing:.05em;padding:8px 10px;border-bottom:1px solid var(--border);font-family:'Inter';}
+table td{padding:10px;border-bottom:1px solid rgba(255,255,255,.05);vertical-align:middle;}
+table tr:hover td{background:rgba(233,200,115,.03);}
+.table-wrap{overflow-x:auto;}
+.btn-sm{padding:6px 11px;border-radius:7px;border:1px solid #3a3a34;background:transparent;color:var(--muted);cursor:pointer;font-size:11px;font-weight:700;font-family:'Inter';}
+.btn-sm:hover{color:var(--ivory);border-color:#54544a;}
+.btn-sm.danger:hover{color:#ff9b9b;border-color:rgba(224,85,85,.5);}
+.pill{padding:3px 10px;border-radius:999px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;}
+.pill.ok{background:rgba(93,221,93,.14);color:#7edc9c;}
+.pill.off{background:rgba(224,85,85,.14);color:#ff9b9b;}
+.admin-grid-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;}
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted);}
+.empty-state .ico{font-size:36px;margin-bottom:10px;}
+
+@media(max-width:640px){
+  .hero-valor{font-size:38px;}
+  .tab-btn{font-size:10px;padding:9px 12px;}
+  .market-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;}
+  .prod-img{height:110px;}
+  .prod-img svg{width:60px;height:60px;}
+}
+</style>
+</head>
+<body>
+
+<div id="toast-wrap"></div>
+
+<!-- LOGIN -->
+<div id="login-overlay">
+  <div class="login-box">
+    <div class="login-logo">🛍️</div>
+    <div class="login-title">Marketplace Credibilita</div>
+    <div class="login-sub">Venda. Acumule. Escolha. Conquiste.</div>
+    <input class="login-field" id="login-user" placeholder="Usuário" autocomplete="username">
+    <input class="login-field" id="login-pass" type="password" placeholder="Senha" autocomplete="current-password">
+    <button class="login-btn" onclick="fazerLogin()">Entrar</button>
+    <div class="login-erro" id="login-erro"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="header">
+    <div class="header-left">
+      <div class="brand">🛍️ Marketplace Credibilita</div>
+      <div class="tagline">Venda. Acumule. Escolha. Conquiste.</div>
+      <div class="firebase-status" id="firebase-status"><span class="dot"></span> Conectando…</div>
+    </div>
+    <div class="header-right">
+      <div id="user-badge"></div>
+    </div>
+  </div>
+
+  <div class="tabs" id="tabs-principal"></div>
+
+  <!-- DASHBOARD -->
+  <div class="view active" id="view-dashboard">
+    <div class="hero-saldo">
+      <div class="hero-label">Seus pontos</div>
+      <div class="hero-valor" id="dash-saldo"><span class="num">0</span><span class="unidade">pts</span></div>
+      <div class="hero-sub" id="dash-total-vendido">Você já vendeu <strong>R$ 0,00</strong></div>
+      <button class="btn-registrar" onclick="abrirModalVenda()">➕ Registrar Venda</button>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="section-label">Próxima recompensa</div>
+        <div id="dash-proxima"></div>
+      </div>
+      <div class="card">
+        <div class="section-label">Ranking rápido</div>
+        <div class="mini-rank" id="dash-mini-rank"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:18px;">
+      <div class="section-label">Últimas vendas</div>
+      <div id="dash-ultimas-vendas"></div>
+    </div>
+  </div>
+
+  <!-- MARKETPLACE -->
+  <div class="view" id="view-marketplace">
+    <div class="card">
+      <div class="hero-label" style="margin-bottom:4px;">Seu saldo</div>
+      <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+        <div class="hero-valor" style="font-size:32px;" id="market-saldo"><span class="num">0</span><span class="unidade">pts</span></div>
+      </div>
+      <div class="hero-sub" id="market-sub"></div>
+    </div>
+    <div class="section-label" style="margin-top:24px;">Recompensas disponíveis</div>
+    <div class="market-grid" id="market-grid"></div>
+  </div>
+
+  <!-- MEUS PRÊMIOS -->
+  <div class="view" id="view-premios">
+    <div class="section-label">Meus prêmios resgatados</div>
+    <div id="premios-lista"></div>
+  </div>
+
+  <!-- HISTÓRICO -->
+  <div class="view" id="view-historico">
+    <div class="card" style="margin-bottom:18px;">
+      <div class="hero-label">Saldo atual</div>
+      <div class="hero-valor" style="font-size:30px;" id="historico-saldo"><span class="num">0</span><span class="unidade">pts</span></div>
+    </div>
+    <div class="section-label">Extrato completo de pontos</div>
+    <div id="historico-lista"></div>
+  </div>
+
+  <!-- MINHAS VENDAS -->
+  <div class="view" id="view-vendas">
+    <div class="card" style="margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+      <div>
+        <div class="section-label" style="margin-bottom:2px;">Minhas vendas</div>
+        <div style="color:var(--muted);font-size:12.5px;">Histórico completo de vendas e resgates</div>
+      </div>
+      <button class="btn-registrar" style="width:auto;margin:0;padding:12px 20px;" onclick="abrirModalVenda()">➕ Registrar Venda</button>
+    </div>
+    <div id="vendas-lista"></div>
+  </div>
+
+  <!-- DUPLAS -->
+  <div class="view" id="view-duplas">
+    <div class="section-label">Desempenho das duplas</div>
+    <div id="duplas-lista"></div>
+  </div>
+
+  <!-- RANKING -->
+  <div class="view" id="view-ranking">
+    <div class="section-label">Ranking individual</div>
+    <div id="ranking-individual" style="margin-bottom:26px;"></div>
+    <div class="section-label">Ranking de duplas</div>
+    <div id="ranking-duplas"></div>
+  </div>
+
+  <!-- ADMIN -->
+  <div class="view" id="view-admin">
+    <div class="admin-tabs" id="admin-tabs"></div>
+
+    <div class="admin-view active" id="admin-vendas">
+      <div class="card"><div class="table-wrap"><table id="admin-tabela-vendas"></table></div></div>
+    </div>
+
+    <div class="admin-view" id="admin-produtos">
+      <div class="card" style="margin-bottom:18px;">
+        <div class="section-label" id="np-titulo">Novo produto</div>
+        <div class="admin-grid-form">
+          <div class="field-group" style="margin-bottom:0;"><label>Nome</label><input id="np-nome"></div>
+          <div class="field-group" style="margin-bottom:0;"><label>Pontos</label><input id="np-pontos" type="number"></div>
+          <div class="field-group" style="margin-bottom:0;"><label>Estoque (vazio = ilimitado)</label><input id="np-estoque" type="number"></div>
+          <div class="field-group" style="margin-bottom:0;"><label>Ícone</label>
+            <select id="np-icone"></select>
+          </div>
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;margin-top:14px;color:var(--muted);font-size:12.5px;">
+          <input type="checkbox" id="np-repetivel" style="width:auto;"> Permitir que a mesma pessoa resgate mais de uma vez
+        </label>
+        <div style="display:flex;gap:10px;margin-top:14px;">
+          <button class="btn-primario" style="width:auto;padding:10px 22px;" id="np-btn-salvar" onclick="adminCriarProduto()">+ Adicionar produto</button>
+          <button class="btn-ghost" style="width:auto;padding:10px 18px;display:none;" id="np-btn-cancelar" onclick="adminCancelarEdicaoProduto()">Cancelar edição</button>
+        </div>
+      </div>
+      <div class="card"><div class="table-wrap"><table id="admin-tabela-produtos"></table></div></div>
+    </div>
+
+    <div class="admin-view" id="admin-vendedoras">
+      <div class="card" style="margin-bottom:18px;">
+        <div class="section-label">Nova vendedora</div>
+        <div class="admin-grid-form">
+          <div class="field-group" style="margin-bottom:0;"><label>Nome</label><input id="nv-nome"></div>
+          <div class="field-group" style="margin-bottom:0;"><label>Usuário (login)</label><input id="nv-user"></div>
+          <div class="field-group" style="margin-bottom:0;"><label>Senha</label><input id="nv-pass"></div>
+        </div>
+        <button class="btn-primario" style="margin-top:14px;width:auto;padding:10px 22px;" onclick="adminCriarVendedora()">+ Adicionar vendedora</button>
+      </div>
+      <div class="card"><div class="table-wrap"><table id="admin-tabela-vendedoras"></table></div></div>
+      <div class="card" style="margin-top:18px;">
+        <div class="section-label">Ajustes manuais recentes</div>
+        <div id="admin-ajustes-lista"></div>
+      </div>
+    </div>
+
+    <div class="admin-view" id="admin-resgates">
+      <div class="card"><div class="table-wrap"><table id="admin-tabela-resgates"></table></div></div>
+    </div>
+
+    <div class="admin-view" id="admin-config">
+      <div class="card">
+        <div class="section-label">Conversão de vendas → pontos</div>
+        <div class="field-group">
+          <label>Cada R$ 1,00 vendido vale quantos pontos?</label>
+          <input id="cfg-conversao" type="number" step="0.01">
+        </div>
+        <div class="section-label" style="margin-top:20px;">Metas de dupla (pontos)</div>
+        <div class="admin-grid-form">
+          <div class="field-group" style="margin-bottom:0;"><label>Nível 1</label><input id="cfg-duo1" type="number"></div>
+          <div class="field-group" style="margin-bottom:0;"><label>Nível 2</label><input id="cfg-duo2" type="number"></div>
+          <div class="field-group" style="margin-bottom:0;"><label>Nível 3</label><input id="cfg-duo3" type="number"></div>
+        </div>
+        <button class="btn-primario" style="margin-top:16px;width:auto;padding:10px 22px;" onclick="adminSalvarConfig()">Salvar configurações</button>
+        <span class="save-status" id="cfg-save-status"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: REGISTRAR VENDA -->
+<div class="modal-overlay" id="modal-venda">
+  <div class="modal-box">
+    <div class="modal-title" id="mv-titulo">Registrar Venda</div>
+    <div class="modal-sub" id="mv-subtitulo">Preencha os dados — os pontos são calculados automaticamente.</div>
+    <div class="field-group" id="mv-vendedora-wrap" style="display:none;">
+      <label>Vendedora responsável</label>
+      <select id="mv-vendedora"></select>
+    </div>
+    <div class="field-group"><label>Nome do cliente</label><input id="mv-cliente" placeholder="Ex: João Pereira"></div>
+    <div class="field-group"><label>Valor da venda (R$)</label><input id="mv-valor" type="number" step="0.01" placeholder="0,00"></div>
+    <div class="field-group">
+      <label>Tipo de venda</label>
+      <select id="mv-tipo" onchange="mvAtualizarTipo()">
+        <option value="individual">Venda individual</option>
+        <option value="dupla">Venda em dupla</option>
+      </select>
+    </div>
+    <div class="field-group" id="mv-parceira-wrap" style="display:none;">
+      <label>Quem participou da venda com você?</label>
+      <select id="mv-parceira"></select>
+    </div>
+    <div class="field-group"><label>Data</label><input id="mv-data" type="date"></div>
+    <div class="field-group"><label>Observação (opcional)</label><textarea id="mv-obs" placeholder="Detalhes adicionais..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="fecharModalVenda()">Cancelar</button>
+      <button class="btn-primario" onclick="confirmarRegistroVenda()">Registrar venda</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CONFIRMAR RESGATE -->
+<div class="modal-overlay" id="modal-resgate">
+  <div class="modal-box">
+    <div class="modal-title">Confirmar Resgate</div>
+    <div class="modal-sub">Você está prestes a resgatar este prêmio.</div>
+    <div class="confirma-resumo" id="resgate-resumo"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="fecharModalResgate()">Cancelar</button>
+      <button class="btn-primario" onclick="confirmarResgate()">Confirmar resgate</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════
+   ÍCONES DOS PRODUTOS — ilustrações próprias (SVG),
+   nunca dependem de link externo, sempre no mesmo estilo.
+══════════════════════════════════════════════════ */
+const ICONES = {
+  pipoca: `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor">
+    <path d="M28 45 L72 45 L66 88 L34 88 Z" stroke-width="2.5"/>
+    <path d="M34 45 L38 88 M50 45 L50 88 M66 45 L62 88" stroke-width="1.2" opacity=".5"/>
+    <g fill="currentColor" stroke="none">
+      <circle cx="35" cy="38" r="9"/><circle cx="50" cy="29" r="11"/><circle cx="65" cy="38" r="9"/>
+      <circle cx="43" cy="41" r="7"/><circle cx="58" cy="41" r="7"/>
+    </g></svg>`,
+  hotpocket: `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor">
+    <rect x="22" y="42" width="56" height="38" rx="8" stroke-width="2.5"/>
+    <path d="M22 55 Q50 65 78 55" stroke-width="1.5" opacity=".6"/>
+    <path d="M38 30 Q34 24 38 18 M50 30 Q46 22 50 14 M62 30 Q58 24 62 18" stroke-width="2.5" stroke-linecap="round"/></svg>`,
+  chocolate: `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor">
+    <rect x="20" y="26" width="60" height="48" rx="6" stroke-width="2.5"/>
+    <path d="M40 26 V74 M60 26 V74 M20 50 H80" stroke-width="2"/></svg>`,
+  pringles: `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor">
+    <path d="M32 22 H68 V78 Q68 84 50 84 Q32 84 32 78 Z" stroke-width="2.5"/>
+    <ellipse cx="50" cy="22" rx="18" ry="7" stroke-width="2.5"/>
+    <path d="M32 40 H68" stroke-width="1.5" opacity=".5"/></svg>`,
+  lasanha: `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor">
+    <path d="M18 70 Q50 82 82 70 L78 78 Q50 90 22 78 Z" stroke-width="2.5"/>
+    <path d="M20 60 Q50 72 80 60" stroke-width="2"/><path d="M22 50 Q50 62 78 50" stroke-width="2"/>
+    <path d="M24 40 Q50 52 76 40" stroke-width="2"/><path d="M26 30 Q50 42 74 30" stroke-width="2"/></svg>`,
+  presente: `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor">
+    <rect x="20" y="42" width="60" height="42" rx="4" stroke-width="2.5"/>
+    <path d="M20 58 H80 M50 42 V84" stroke-width="2"/>
+    <path d="M50 42 Q34 18 24 30 Q18 40 50 42 Q82 40 76 30 Q66 18 50 42 Z" stroke-width="2.2"/></svg>`,
+  estrela: `<svg viewBox="0 0 100 100" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+    <path d="M50 16 L59 40 L85 40 L64 55 L72 80 L50 65 L28 80 L36 55 L15 40 L41 40 Z"/></svg>`
+};
+const ICONE_LABELS = {pipoca:'🍿 Pipoca',hotpocket:'🥪 Hot Pocket',chocolate:'🍫 Chocolate',pringles:'🥫 Pringles',lasanha:'🍝 Lasanha',presente:'🎁 Presente (genérico)',estrela:'⭐ Estrela (genérico)'};
+function icone(key){ return ICONES[key] || ICONES.estrela; }
+
+/* ══════════════════════════════════════════════════
+   ESTADO
+══════════════════════════════════════════════════ */
+let usuarios={}, vendedoras={}, vendas={}, resgates={}, produtos={}, ajustes={}, config={conversao:1,metasDupla:[15000,25000,50000]};
+let usuarioAtual=null;
+let carregou={usuarios:false,vendedoras:false,vendas:false,resgates:false,produtos:false,ajustes:false,config:false};
+let produtoResgatandoId=null;
+
+function fmt(n){ return (n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtPts(n){ return Math.round(n||0).toLocaleString('pt-BR'); }
+function escHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function hoje(){ return new Date().toISOString().slice(0,10); }
+function fmtData(iso){ if(!iso) return ''; const [a,m,d]=iso.split('-'); return d+'/'+m+'/'+a; }
+function gerarId(prefixo){ return prefixo+Date.now()+Math.random().toString(36).slice(2,7); }
+
+/* ══════════════════════════════════════════════════
+   TOASTS E CONFETE
+══════════════════════════════════════════════════ */
+function toast(titulo, corpo, tipo){
+  const wrap=document.getElementById('toast-wrap');
+  const el=document.createElement('div');
+  el.className='toast'+(tipo==='erro'?' erro':'');
+  el.innerHTML=`<div class="t-titulo">${escHtml(titulo)}</div><div class="t-corpo">${escHtml(corpo)}</div>`;
+  wrap.appendChild(el);
+  setTimeout(()=>{ el.style.animation='toastOut .3s ease forwards'; setTimeout(()=>el.remove(),300); },4200);
+}
+function confete(){
+  const cores=['#e9c873','#b8972a','#f6e6b4','#fff1ad'];
+  for(let i=0;i<26;i++){
+    const c=document.createElement('div');
+    c.className='confete';
+    c.style.left=Math.random()*100+'vw';
+    c.style.background=cores[Math.floor(Math.random()*cores.length)];
+    c.style.animationDuration=(2+Math.random()*1.5)+'s';
+    c.style.opacity=.7+Math.random()*.3;
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(),3600);
+  }
+}
+function avisarFalhaSalvar(contexto){
+  toast('⚠ Falha ao salvar', 'Não foi possível salvar '+(contexto||'a alteração')+'. Verifique sua internet.', 'erro');
+}
+
+/* ══════════════════════════════════════════════════
+   LOGIN
+══════════════════════════════════════════════════ */
+function fazerLogin(){
+  const userEl=document.getElementById('login-user');
+  const passEl=document.getElementById('login-pass');
+  const erroEl=document.getElementById('login-erro');
+  const user=(userEl.value||'').trim().toLowerCase();
+  const pass=passEl.value||'';
+  if(!carregou.usuarios){ erroEl.textContent='Carregando dados, aguarde um instante e tente de novo...'; return; }
+  const u=usuarios[user];
+  if(!u || u.senha!==pass){ erroEl.textContent='Usuário ou senha incorretos.'; return; }
+  usuarioAtual={login:user, papel:u.papel, vendedora:u.vendedora||null};
+  erroEl.textContent='';
+  document.getElementById('login-overlay').style.display='none';
+  document.getElementById('app').style.display='block';
+  montarUserBadge();
+  montarTabs();
+  renderTudo();
+}
+function fazerLogout(){
+  usuarioAtual=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-overlay').style.display='flex';
+  document.getElementById('login-user').value='';
+  document.getElementById('login-pass').value='';
+}
+function montarUserBadge(){
+  const nome = usuarioAtual.papel==='admin' ? 'Administrador' : usuarioAtual.vendedora;
+  document.getElementById('user-badge').innerHTML =
+    `👤 ${escHtml(nome)} <button onclick="fazerLogout()">Sair</button>`;
+}
+
+/* ══════════════════════════════════════════════════
+   ABAS PRINCIPAIS
+══════════════════════════════════════════════════ */
+const ABAS = [
+  {id:'dashboard', label:'Dashboard'},
+  {id:'marketplace', label:'Marketplace'},
+  {id:'premios', label:'Meus Prêmios'},
+  {id:'historico', label:'Histórico'},
+  {id:'vendas', label:'Minhas Vendas'},
+  {id:'duplas', label:'Duplas'},
+  {id:'ranking', label:'Ranking'},
+];
+function montarTabs(){
+  const abas = ABAS.slice();
+  if(usuarioAtual.papel==='admin') abas.push({id:'admin', label:'⚙️ Admin'});
+  document.getElementById('tabs-principal').innerHTML = abas.map((a,i)=>
+    `<button class="tab-btn ${i===0?'active':''}" id="tabbtn-${a.id}" onclick="mudarAba('${a.id}')">${a.label}</button>`
+  ).join('');
+}
+function mudarAba(id){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tabbtn-'+id).classList.add('active');
+  document.querySelectorAll('#app > .view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+  renderTudo();
+}
+
+/* ══════════════════════════════════════════════════
+   CÁLCULOS DERIVADOS (fonte única de verdade: vendas+resgates)
+══════════════════════════════════════════════════ */
+function totalAjustes(nome){
+  let s=0;
+  Object.values(ajustes).forEach(a=>{ if(a.vendedora===nome) s+=a.pontos; });
+  return s;
+}
+// Pontos ganhos ao longo da campanha (vendas + ajustes), sem descontar resgates — usado no RANKING,
+// pra quem resgata um prêmio não "cair" de posição por ter gastado pontos.
+function pontosGanhos(nome){
+  let s=0;
+  Object.values(vendas).forEach(v=>{ if(!v.cancelada && (v.vendedora===nome||v.parceira===nome)) s+=v.pontos; });
+  s += totalAjustes(nome);
+  return s;
+}
+function saldoPontos(nome){
+  let s = pontosGanhos(nome);
+  Object.values(resgates).forEach(r=>{ if(r.vendedora===nome) s-=r.pontos; });
+  return s;
+}
+function totalVendido(nome){
+  let s=0;
+  Object.values(vendas).forEach(v=>{ if(!v.cancelada && (v.vendedora===nome||v.parceira===nome)) s+=v.valor; });
+  return s;
+}
+function duoKey(a,b){ return [a,b].sort().join('+'); }
+function duoTotalPontos(a,b){
+  let s=0;
+  Object.values(vendas).forEach(v=>{
+    if(v.cancelada || v.tipo!=='dupla') return;
+    if(duoKey(v.vendedora,v.parceira)===duoKey(a,b)) s+=v.pontos;
+  });
+  return s;
+}
+function estoqueRestante(prod, prodId){
+  if(prod.estoque===null || prod.estoque===undefined || prod.estoque==='') return null;
+  const usados = Object.values(resgates).filter(r=>r.produtoId===prodId).length;
+  return Math.max(0, prod.estoque - usados);
+}
+function jaResgatou(nome, prodId){
+  return Object.values(resgates).some(r=>r.vendedora===nome && r.produtoId===prodId);
+}
+function nomesVendedorasAtivas(){
+  return Object.keys(vendedoras).filter(n=>vendedoras[n] && vendedoras[n].ativo!==false);
+}
+
+/* ══════════════════════════════════════════════════
+   RENDER GERAL — chama a view ativa
+══════════════════════════════════════════════════ */
+function renderTudo(){
+  if(!usuarioAtual) return;
+  renderDashboard();
+  renderMarketplace();
+  renderPremios();
+  renderHistorico();
+  renderVendas();
+  renderDuplas();
+  renderRanking();
+  if(usuarioAtual.papel==='admin') renderAdmin();
+}
+
+/* ── DASHBOARD ── */
+function renderDashboard(){
+  const nome=usuarioAtual.vendedora;
+  if(usuarioAtual.papel==='admin'){
+    document.getElementById('dash-saldo').innerHTML='<span class="num">—</span>';
+    document.getElementById('dash-total-vendido').innerHTML='Faça login como vendedora para ver o painel pessoal. Use a aba <strong>Admin</strong> para gerenciar o sistema.';
+    document.getElementById('dash-proxima').innerHTML='<div class="empty-state">Sem dados pessoais no modo administrador.</div>';
+    document.getElementById('dash-ultimas-vendas').innerHTML='';
+  } else {
+    const saldo=saldoPontos(nome);
+    const el=document.getElementById('dash-saldo');
+    const anterior=el.textContent;
+    el.innerHTML=`<span class="num">${fmtPts(saldo)}</span><span class="unidade">pts</span>`;
+    if(anterior && anterior!==el.textContent){ el.classList.remove('value-pulse'); void el.offsetWidth; el.classList.add('value-pulse'); }
+    document.getElementById('dash-total-vendido').innerHTML=`Você já vendeu <strong>R$ ${fmt(totalVendido(nome))}</strong>`;
+
+    // níveis / progressão
+    const lista=Object.entries(produtos).filter(([id,p])=>p.ativo).sort((a,b)=>a[1].pontos-b[1].pontos);
+    document.getElementById('dash-proxima').innerHTML = lista.length ? lista.map(([id,p])=>{
+      const desbloq = saldo>=p.pontos;
+      return `<div class="nivel-row ${desbloq?'desbloqueado':''}">
+        <div class="nivel-icone" style="color:var(--gold-light)">${icone(p.icone)}</div>
+        <div class="nivel-info"><div class="nivel-nome">${escHtml(p.nome)}</div><div class="nivel-pts">${fmtPts(p.pontos)} pts${desbloq?'':' • faltam '+fmtPts(p.pontos-saldo)}</div></div>
+        <div class="nivel-status">${desbloq?'✅':'🔒'}</div>
+      </div>`;
+    }).join('') : '<div class="empty-state">Nenhum produto cadastrado ainda.</div>';
+
+    // últimas vendas
+    const minhas = Object.entries(vendas).filter(([id,v])=>v.vendedora===nome||v.parceira===nome)
+      .sort((a,b)=> b[1].criadoEm-a[1].criadoEm).slice(0,5);
+    document.getElementById('dash-ultimas-vendas').innerHTML = minhas.length ? minhas.map(([id,v])=>`
+      <div class="venda-item ${v.cancelada?'cancelada':''}">
+        <div class="info"><div class="cliente">${escHtml(v.cliente)}${v.tipo==='dupla'?' <span style="color:var(--muted);font-weight:400;">(dupla c/ '+escHtml(v.vendedora===nome?v.parceira:v.vendedora)+')</span>':''}</div>
+        <div class="meta">${fmtData(v.data)} • R$ ${fmt(v.valor)}${v.cancelada?' • cancelada':''}</div></div>
+        <div class="pts">+${fmtPts(v.pontos)} pts</div>
+      </div>`).join('') : '<div class="empty-state">Nenhuma venda registrada ainda. Que tal a primeira?</div>';
+  }
+
+  // mini-ranking (visível pra todos)
+  const ativos = nomesVendedorasAtivas();
+  const rankMini = ativos.map(n=>({nome:n, pts:pontosGanhos(n)})).sort((a,b)=>b.pts-a.pts);
+  document.getElementById('dash-mini-rank').innerHTML = rankMini.map((r,i)=>`
+    <div class="mini-rank-item ${r.nome===nome?'eu':''}">
+      <div class="pos">${i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'º'}</div>
+      <div class="nm">${escHtml(r.nome)}</div>
+      <div class="pt">${fmtPts(r.pts)}</div>
+    </div>`).join('') || '<div class="empty-state">Sem vendedoras cadastradas.</div>';
+}
+
+/* ── MARKETPLACE ── */
+function renderMarketplace(){
+  const nome=usuarioAtual.vendedora;
+  const saldo = nome ? saldoPontos(nome) : 0;
+  document.getElementById('market-saldo').innerHTML=`<span class="num">${fmtPts(saldo)}</span><span class="unidade">pts</span>`;
+  const lista=Object.entries(produtos).filter(([id,p])=>p.ativo).sort((a,b)=>a[1].pontos-b[1].pontos);
+  const proxima = lista.find(([id,p])=>saldo<p.pontos);
+  document.getElementById('market-sub').innerHTML = usuarioAtual.papel==='admin'
+    ? 'Modo administrador — navegando como visitante do marketplace.'
+    : (proxima ? `Faltam <strong>${fmtPts(proxima[1].pontos-saldo)} pontos</strong> para ${escHtml(proxima[1].nome)}.` : 'Parabéns — você já pode resgatar tudo que está disponível! 🎉');
+
+  document.getElementById('market-grid').innerHTML = lista.length ? lista.map(([id,p])=>{
+    const restante = estoqueRestante(p,id);
+    const esgotado = restante!==null && restante<=0;
+    const bloqueado = saldo<p.pontos;
+    const resgatouAntes = nome && !p.repetivel && jaResgatou(nome,id);
+    const indisponivel = bloqueado||esgotado||resgatouAntes;
+    return `<div class="prod-card ${indisponivel?'bloqueado':''}">
+      ${esgotado?'<div class="badge-esgotado">Esgotado</div>':''}
+      <div class="prod-img" style="color:var(--gold-light)">
+        ${icone(p.icone)}
+        ${indisponivel&&!esgotado?'<div class="prod-lock-overlay">'+(resgatouAntes?'✅':'🔒')+'</div>':''}
+      </div>
+      <div class="prod-body">
+        <div class="prod-nome">${escHtml(p.nome)}</div>
+        <div class="prod-pontos">${fmtPts(p.pontos)} pontos</div>
+        ${bloqueado&&!resgatouAntes?`<div class="prod-falta">Faltam ${fmtPts(p.pontos-saldo)} pontos</div>`:''}
+        ${resgatouAntes?`<div class="prod-falta">Você já resgatou este prêmio</div>`:''}
+        ${restante!==null?`<div class="prod-estoque">${esgotado?'Sem estoque':'Restam '+restante}</div>`:''}
+        <button class="prod-btn" ${indisponivel||usuarioAtual.papel==='admin'?'disabled':''} onclick="abrirModalResgate('${id}')">
+          ${esgotado?'Esgotado':resgatouAntes?'Já resgatado':bloqueado?'Bloqueado':'Comprar'}
+        </button>
+      </div>
+    </div>`;
+  }).join('') : '<div class="empty-state"><div class="ico">🛍️</div>Nenhum produto disponível no momento.</div>';
+}
+
+/* ── MEUS PRÊMIOS ── */
+function renderPremios(){
+  const nome=usuarioAtual.vendedora;
+  if(!nome){ document.getElementById('premios-lista').innerHTML='<div class="empty-state">Faça login como vendedora para ver os prêmios resgatados.</div>'; return; }
+  const meus = Object.entries(resgates).filter(([id,r])=>r.vendedora===nome).sort((a,b)=>b[1].criadoEm-a[1].criadoEm);
+  document.getElementById('premios-lista').innerHTML = meus.length ? meus.map(([id,r])=>`
+    <div class="venda-item">
+      <div class="info"><div class="cliente">${escHtml(r.produtoNome)}</div><div class="meta">Resgatado em ${fmtData(r.data)}</div></div>
+      <div class="pts neg">-${fmtPts(r.pontos)} pts</div>
+    </div>`).join('') : '<div class="empty-state"><div class="ico">🎁</div>Você ainda não resgatou nenhum prêmio.</div>';
+}
+
+/* ── HISTÓRICO (extrato unificado: vendas + resgates, em ordem cronológica) ── */
+function renderHistorico(){
+  const nome=usuarioAtual.vendedora;
+  if(!nome){ document.getElementById('historico-lista').innerHTML='<div class="empty-state">Faça login como vendedora para ver o histórico.</div>'; document.getElementById('historico-saldo').innerHTML='<span class="num">—</span>'; return; }
+  document.getElementById('historico-saldo').innerHTML=`<span class="num">${fmtPts(saldoPontos(nome))}</span><span class="unidade">pts</span>`;
+
+  const itens=[];
+  Object.values(vendas).forEach(v=>{
+    if(v.vendedora!==nome && v.parceira!==nome) return;
+    itens.push({
+      criadoEm:v.criadoEm, data:v.data, cancelada:v.cancelada, positivo:true, pontos:v.pontos,
+      titulo:'Venda registrada'+(v.tipo==='dupla'?' (dupla)':''), sub:escHtml(v.cliente)+' • R$ '+fmt(v.valor)+(v.cancelada?' • CANCELADA':'')
+    });
+  });
+  Object.values(resgates).forEach(r=>{
+    if(r.vendedora!==nome) return;
+    itens.push({ criadoEm:r.criadoEm, data:r.data, cancelada:false, positivo:false, pontos:r.pontos, titulo:'Resgate: '+escHtml(r.produtoNome), sub:'' });
+  });
+  Object.values(ajustes).forEach(a=>{
+    if(a.vendedora!==nome) return;
+    itens.push({ criadoEm:a.criadoEm, data:a.data, cancelada:false, positivo:a.pontos>=0, pontos:Math.abs(a.pontos), titulo:'Ajuste administrativo', sub:escHtml(a.motivo) });
+  });
+  itens.sort((a,b)=>b.criadoEm-a.criadoEm);
+
+  document.getElementById('historico-lista').innerHTML = itens.length ? itens.map(it=>`
+    <div class="venda-item ${it.cancelada?'cancelada':''}">
+      <div class="info"><div class="cliente">${it.titulo}</div><div class="meta">${fmtData(it.data)}${it.sub?' • '+it.sub:''}</div></div>
+      <div class="pts ${it.positivo?'':'neg'}">${it.positivo?'+':'-'}${fmtPts(it.pontos)} pts</div>
+    </div>`).join('') : '<div class="empty-state"><div class="ico">📜</div>Nenhuma movimentação ainda.</div>';
+}
+
+/* ── MINHAS VENDAS ── */
+function renderVendas(){
+  const nome=usuarioAtual.vendedora;
+  if(!nome){ document.getElementById('vendas-lista').innerHTML='<div class="empty-state">Faça login como vendedora para ver suas vendas.</div>'; return; }
+  const minhas = Object.entries(vendas).filter(([id,v])=>v.vendedora===nome||v.parceira===nome).sort((a,b)=>b[1].criadoEm-a[1].criadoEm);
+  document.getElementById('vendas-lista').innerHTML = minhas.length ? minhas.map(([id,v])=>`
+    <div class="venda-item ${v.cancelada?'cancelada':''}">
+      <div class="info"><div class="cliente">${escHtml(v.cliente)}${v.tipo==='dupla'?' <span style="color:var(--muted);font-weight:400;">(dupla c/ '+escHtml(v.vendedora===nome?v.parceira:v.vendedora)+')</span>':''}</div>
+      <div class="meta">${fmtData(v.data)} • R$ ${fmt(v.valor)}${v.obs?' • '+escHtml(v.obs):''}${v.cancelada?' • CANCELADA':''}</div></div>
+      <div class="pts">+${fmtPts(v.pontos)} pts</div>
+    </div>`).join('') : '<div class="empty-state"><div class="ico">📋</div>Nenhuma venda registrada ainda.</div>';
+}
+
+/* ── DUPLAS ── */
+function duplasPossiveis(){
+  const ativos = nomesVendedorasAtivas();
+  const pares=[];
+  for(let i=0;i<ativos.length;i++) for(let j=i+1;j<ativos.length;j++) pares.push([ativos[i],ativos[j]]);
+  return pares;
+}
+function renderDuplas(){
+  const pares = duplasPossiveis();
+  const metas = config.metasDupla||[15000,25000,50000];
+  document.getElementById('duplas-lista').innerHTML = pares.length ? pares.map(([a,b])=>{
+    const pts = duoTotalPontos(a,b);
+    const nivelAtual = metas.filter(m=>pts>=m).length;
+    const proxMeta = metas.find(m=>pts<m) || metas[metas.length-1];
+    const pct = Math.min(100,(pts/proxMeta)*100);
+    return `<div class="duo-card">
+      <div class="duo-nomes">${escHtml(a)} + ${escHtml(b)}</div>
+      <div style="color:var(--muted);font-size:12px;margin-top:2px;">Nível ${nivelAtual} de ${metas.length}</div>
+      <div class="duo-progress">
+        <div class="duo-row"><span>${fmtPts(pts)} / ${fmtPts(proxMeta)} pts</span><span class="duo-pct">${pct.toFixed(0)}%</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+      </div>
+    </div>`;
+  }).join('') : '<div class="empty-state">Cadastre ao menos duas vendedoras para formar duplas.</div>';
+}
+
+/* ── RANKING ── */
+function renderRanking(){
+  const ativos = nomesVendedorasAtivas();
+  const rank = ativos.map(n=>({nome:n, pts:pontosGanhos(n)})).sort((a,b)=>b.pts-a.pts);
+  const emojis=['🥇','🥈','🥉'];
+  document.getElementById('ranking-individual').innerHTML = rank.length ? rank.map((r,i)=>`
+    <div class="rank-item ${i===0?'primeiro':''}">
+      <div class="rank-badge">${i<3?emojis[i]:(i+1)+'º'}</div>
+      <div class="rank-nome">${escHtml(r.nome)}</div>
+      <div class="rank-pts">${fmtPts(r.pts)} pts</div>
+    </div>`).join('') : '<div class="empty-state">Sem vendedoras cadastradas.</div>';
+
+  const pares = duplasPossiveis().map(([a,b])=>({a,b,pts:duoTotalPontos(a,b)})).sort((x,y)=>y.pts-x.pts);
+  document.getElementById('ranking-duplas').innerHTML = pares.length ? pares.map((d,i)=>`
+    <div class="rank-item ${i===0&&d.pts>0?'primeiro':''}">
+      <div class="rank-badge">${i<3?emojis[i]:(i+1)+'º'}</div>
+      <div class="rank-nome">${escHtml(d.a)} + ${escHtml(d.b)}</div>
+      <div class="rank-pts">${fmtPts(d.pts)} pts</div>
+    </div>`).join('') : '<div class="empty-state">Sem duplas formadas ainda.</div>';
+}
+
+/* ══════════════════════════════════════════════════
+   MODAL: REGISTRAR / EDITAR VENDA
+══════════════════════════════════════════════════ */
+let vendaEditandoId=null;
+function abrirModalVenda(){
+  if(usuarioAtual.papel==='admin'){ toast('Ação indisponível','Faça login como vendedora para registrar uma venda.','erro'); return; }
+  vendaEditandoId=null;
+  document.getElementById('mv-titulo').textContent='Registrar Venda';
+  document.getElementById('mv-subtitulo').textContent='Preencha os dados — os pontos são calculados automaticamente.';
+  document.getElementById('mv-vendedora-wrap').style.display='none';
+  document.getElementById('mv-cliente').value='';
+  document.getElementById('mv-valor').value='';
+  document.getElementById('mv-tipo').value='individual';
+  document.getElementById('mv-data').value=hoje();
+  document.getElementById('mv-obs').value='';
+  mvAtualizarTipo();
+  document.getElementById('modal-venda').classList.add('active');
+}
+function adminEditarVenda(id){
+  const v=vendas[id]; if(!v) return;
+  vendaEditandoId=id;
+  document.getElementById('mv-titulo').textContent='Editar Venda';
+  document.getElementById('mv-subtitulo').textContent='Alterando um registro existente — os pontos são recalculados pela conversão atual.';
+  const wrapVend=document.getElementById('mv-vendedora-wrap');
+  wrapVend.style.display='block';
+  document.getElementById('mv-vendedora').innerHTML = nomesVendedorasAtivas().map(n=>`<option value="${escHtml(n)}" ${n===v.vendedora?'selected':''}>${escHtml(n)}</option>`).join('');
+  document.getElementById('mv-cliente').value=v.cliente;
+  document.getElementById('mv-valor').value=v.valor;
+  document.getElementById('mv-tipo').value=v.tipo;
+  document.getElementById('mv-data').value=v.data;
+  document.getElementById('mv-obs').value=v.obs||'';
+  mvAtualizarTipo();
+  if(v.tipo==='dupla') document.getElementById('mv-parceira').value=v.parceira||'';
+  document.getElementById('modal-venda').classList.add('active');
+}
+function fecharModalVenda(){ document.getElementById('modal-venda').classList.remove('active'); vendaEditandoId=null; }
+function mvAtualizarTipo(){
+  const tipo=document.getElementById('mv-tipo').value;
+  const wrap=document.getElementById('mv-parceira-wrap');
+  if(tipo==='dupla'){
+    wrap.style.display='block';
+    const vendSelect=document.getElementById('mv-vendedora-wrap').style.display!=='none' ? document.getElementById('mv-vendedora').value : usuarioAtual.vendedora;
+    const outras = nomesVendedorasAtivas().filter(n=>n!==vendSelect);
+    document.getElementById('mv-parceira').innerHTML = outras.map(n=>`<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('') || '<option value="">Nenhuma outra vendedora cadastrada</option>';
+  } else {
+    wrap.style.display='none';
+  }
+}
+// Avisa quando uma venda destrava um novo prêmio, ou quando falta pouco pra próxima
+function verificarNotificacoesDeSaldo(nome, saldoAntes, saldoDepois){
+  const ativos=Object.entries(produtos).filter(([id,p])=>p.ativo).sort((a,b)=>a[1].pontos-b[1].pontos);
+  ativos.forEach(([id,p])=>{
+    if(saldoAntes<p.pontos && saldoDepois>=p.pontos){
+      setTimeout(()=>{ toast('🏆 Nova recompensa desbloqueada!', p.nome+' já pode ser resgatado no Marketplace.'); confete(); }, 700);
+    }
+  });
+  const proxima = ativos.find(([id,p])=>saldoDepois<p.pontos);
+  if(proxima){
+    const falta = proxima[1].pontos - saldoDepois;
+    if(falta>0 && falta<=500){
+      setTimeout(()=>{ toast('Quase lá!', 'Você está a apenas '+fmtPts(falta)+' pontos de '+proxima[1].nome+'!'); }, 1400);
+    }
+  }
+}
+function confirmarRegistroVenda(){
+  const editando = !!vendaEditandoId;
+  const vendedoraAlvo = editando ? document.getElementById('mv-vendedora').value : usuarioAtual.vendedora;
+  const cliente=document.getElementById('mv-cliente').value.trim();
+  const valor=parseFloat(document.getElementById('mv-valor').value);
+  const tipo=document.getElementById('mv-tipo').value;
+  const parceira=tipo==='dupla'?document.getElementById('mv-parceira').value:null;
+  const data=document.getElementById('mv-data').value||hoje();
+  const obs=document.getElementById('mv-obs').value.trim();
+
+  if(!cliente){ toast('Faltou o cliente','Informe o nome do cliente.','erro'); return; }
+  if(!valor || valor<=0){ toast('Valor inválido','Informe o valor da venda.','erro'); return; }
+  if(tipo==='dupla' && !parceira){ toast('Falta a dupla','Selecione quem participou da venda com você.','erro'); return; }
+
+  const pontos = Math.round(valor * (config.conversao||1) * 100)/100;
+
+  if(editando){
+    const id=vendaEditandoId;
+    const original=vendas[id];
+    const atualizada={ ...original, vendedora:vendedoraAlvo, parceira, cliente, valor, tipo, data, obs, pontos };
+    vendas[id]=atualizada;
+    fecharModalVenda();
+    renderTudo();
+    window.fbSalvar('marketplace/vendas/'+id, atualizada).then(res=>{
+      if(res.ok){ toast('✓ Venda atualizada', cliente+' foi salvo com sucesso.'); }
+      else { vendas[id]=original; renderTudo(); avisarFalhaSalvar('a edição da venda'); }
+    });
+    return;
+  }
+
+  const saldoAntes = saldoPontos(usuarioAtual.vendedora);
+  const id = gerarId('v');
+  const nova = { vendedora: usuarioAtual.vendedora, parceira, cliente, valor, tipo, data, obs, pontos, cancelada:false, criadoEm: Date.now() };
+  vendas[id]=nova; // otimista — a tela já reflete na hora
+  fecharModalVenda();
+  renderTudo();
+  toast('🎉 Venda registrada!', `+ R$ ${fmt(valor)} • + ${fmtPts(pontos)} pontos`);
+  verificarNotificacoesDeSaldo(usuarioAtual.vendedora, saldoAntes, saldoPontos(usuarioAtual.vendedora));
+
+  window.fbSalvar('marketplace/vendas/'+id, nova).then(res=>{
+    if(!res.ok){ delete vendas[id]; renderTudo(); avisarFalhaSalvar('a venda de '+cliente); }
+  });
+}
+
+/* ══════════════════════════════════════════════════
+   MODAL: CONFIRMAR RESGATE
+══════════════════════════════════════════════════ */
+function abrirModalResgate(produtoId){
+  const nome=usuarioAtual.vendedora;
+  const p=produtos[produtoId];
+  if(!p||!nome) return;
+  const saldo=saldoPontos(nome);
+  if(saldo<p.pontos){ toast('Pontos insuficientes','Você ainda não tem pontos suficientes para este prêmio.','erro'); return; }
+  if(!p.repetivel && jaResgatou(nome,produtoId)){ toast('Já resgatado','Você já resgatou este prêmio antes.','erro'); return; }
+  produtoResgatandoId=produtoId;
+  document.getElementById('resgate-resumo').innerHTML=`
+    <div class="confirma-linha"><span>Prêmio</span><strong>${escHtml(p.nome)}</strong></div>
+    <div class="confirma-linha"><span>Valor</span><strong>${fmtPts(p.pontos)} pontos</strong></div>
+    <div class="confirma-linha"><span>Seu saldo atual</span><strong>${fmtPts(saldo)} pontos</strong></div>
+    <div class="confirma-linha total"><span>Saldo após o resgate</span><strong>${fmtPts(saldo-p.pontos)} pontos</strong></div>`;
+  document.getElementById('modal-resgate').classList.add('active');
+}
+function fecharModalResgate(){ document.getElementById('modal-resgate').classList.remove('active'); produtoResgatandoId=null; }
+function confirmarResgate(){
+  const nome=usuarioAtual.vendedora;
+  const p=produtos[produtoResgatandoId];
+  if(!p||!nome) return;
+  const restante = estoqueRestante(p, produtoResgatandoId);
+  if(restante!==null && restante<=0){ toast('Esgotado','Esse prêmio acabou de esgotar.','erro'); fecharModalResgate(); renderTudo(); return; }
+  if(!p.repetivel && jaResgatou(nome,produtoResgatandoId)){ toast('Já resgatado','Você já resgatou este prêmio antes.','erro'); fecharModalResgate(); renderTudo(); return; }
+  const id=gerarId('r');
+  const novo={ vendedora:nome, produtoId:produtoResgatandoId, produtoNome:p.nome, pontos:p.pontos, data:hoje(), criadoEm:Date.now() };
+  resgates[id]=novo;
+  fecharModalResgate();
+  renderTudo();
+  toast('🛍️ Resgate realizado!', `${p.nome} agora é seu — confira em "Meus Prêmios".`);
+  confete();
+
+  window.fbSalvar('marketplace/resgates/'+id, novo).then(res=>{
+    if(!res.ok){ delete resgates[id]; renderTudo(); avisarFalhaSalvar('o resgate de '+p.nome); }
+  });
+}
+
+/* ══════════════════════════════════════════════════
+   ADMIN
+══════════════════════════════════════════════════ */
+const ADMIN_ABAS=[{id:'vendas',label:'Vendas'},{id:'produtos',label:'Produtos'},{id:'resgates',label:'Resgates'},{id:'vendedoras',label:'Vendedoras'},{id:'config',label:'Configurações'}];
+function montarAdminTabs(){
+  document.getElementById('admin-tabs').innerHTML = ADMIN_ABAS.map((a,i)=>
+    `<button class="admin-tab-btn ${i===0?'active':''}" id="admintab-${a.id}" onclick="mudarAdminAba('${a.id}')">${a.label}</button>`
+  ).join('');
+}
+function mudarAdminAba(id){
+  document.querySelectorAll('.admin-tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('admintab-'+id).classList.add('active');
+  document.querySelectorAll('.admin-view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('admin-'+id).classList.add('active');
+}
+function renderAdmin(){
+  if(!document.getElementById('admin-tabs').innerHTML) montarAdminTabs();
+  renderAdminVendas();
+  renderAdminProdutos();
+  renderAdminResgates();
+  renderAdminVendedoras();
+  renderAdminConfig();
+}
+function renderAdminVendas(){
+  const lista=Object.entries(vendas).sort((a,b)=>b[1].criadoEm-a[1].criadoEm);
+  const linhas = lista.map(([id,v])=>`
+    <tr>
+      <td>${fmtData(v.data)}</td>
+      <td>${escHtml(v.cliente)}</td>
+      <td>${escHtml(v.vendedora)}${v.parceira?' + '+escHtml(v.parceira):''}</td>
+      <td>R$ ${fmt(v.valor)}</td>
+      <td>${fmtPts(v.pontos)} pts</td>
+      <td>${v.cancelada?'<span class="pill off">Cancelada</span>':'<span class="pill ok">Ativa</span>'}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn-sm" onclick="adminEditarVenda('${id}')">Editar</button>
+        <button class="btn-sm" onclick="adminAlternarCancelamento('${id}')">${v.cancelada?'Reativar':'Cancelar'}</button>
+        <button class="btn-sm danger" onclick="adminExcluirVenda('${id}')">Excluir</button>
+      </td>
+    </tr>`).join('');
+  document.getElementById('admin-tabela-vendas').innerHTML = lista.length ?
+    `<thead><tr><th>Data</th><th>Cliente</th><th>Vendedora</th><th>Valor</th><th>Pontos</th><th>Status</th><th></th></tr></thead><tbody>${linhas}</tbody>`
+    : '<tbody><tr><td class="empty-state">Nenhuma venda registrada ainda.</td></tr></tbody>';
+}
+function adminAlternarCancelamento(id){
+  const v=vendas[id]; if(!v) return;
+  v.cancelada=!v.cancelada;
+  renderTudo();
+  window.fbSalvar('marketplace/vendas/'+id, v).then(res=>{ if(!res.ok) avisarFalhaSalvar('essa alteração'); });
+}
+function adminExcluirVenda(id){
+  if(!confirm('Excluir esta venda definitivamente? Essa ação não pode ser desfeita.')) return;
+  delete vendas[id];
+  renderTudo();
+  window.fbSalvar('marketplace/vendas/'+id, null).then(res=>{ if(!res.ok) avisarFalhaSalvar('a exclusão da venda'); });
+}
+
+/* ── Produtos: cadastro E edição reaproveitam o mesmo formulário ── */
+let produtoEditandoId=null;
+function renderAdminProdutos(){
+  const sel=document.getElementById('np-icone');
+  if(sel && !sel.innerHTML) sel.innerHTML=Object.keys(ICONE_LABELS).map(k=>`<option value="${k}">${ICONE_LABELS[k]}</option>`).join('');
+  const lista=Object.entries(produtos).sort((a,b)=>(a[1].ordem||0)-(b[1].ordem||0));
+  const linhas=lista.map(([id,p])=>{
+    const restante=estoqueRestante(p,id);
+    return `<tr>
+      <td style="width:34px;color:var(--gold-light);"><div style="width:26px;height:26px;">${icone(p.icone)}</div></td>
+      <td>${escHtml(p.nome)}${p.repetivel?' <span style="color:var(--muted);font-size:10.5px;">(repetível)</span>':''}</td>
+      <td>${fmtPts(p.pontos)} pts</td>
+      <td>${restante===null?'Ilimitado':restante}</td>
+      <td>${p.ativo?'<span class="pill ok">Ativo</span>':'<span class="pill off">Inativo</span>'}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn-sm" onclick="adminEditarProduto('${id}')">Editar</button>
+        <button class="btn-sm" onclick="adminAlternarProduto('${id}')">${p.ativo?'Desativar':'Ativar'}</button>
+        <button class="btn-sm danger" onclick="adminExcluirProduto('${id}')">Excluir</button>
+      </td>
+    </tr>`;
+  }).join('');
+  document.getElementById('admin-tabela-produtos').innerHTML = lista.length ?
+    `<thead><tr><th></th><th>Produto</th><th>Pontos</th><th>Estoque</th><th>Status</th><th></th></tr></thead><tbody>${linhas}</tbody>`
+    : '<tbody><tr><td class="empty-state">Nenhum produto cadastrado.</td></tr></tbody>';
+}
+function adminEditarProduto(id){
+  const p=produtos[id]; if(!p) return;
+  produtoEditandoId=id;
+  document.getElementById('np-titulo').textContent='Editando: '+p.nome;
+  document.getElementById('np-nome').value=p.nome;
+  document.getElementById('np-pontos').value=p.pontos;
+  document.getElementById('np-estoque').value = p.estoque===null||p.estoque===undefined ? '' : p.estoque;
+  document.getElementById('np-icone').value=p.icone;
+  document.getElementById('np-repetivel').checked=!!p.repetivel;
+  document.getElementById('np-btn-salvar').textContent='💾 Salvar alterações';
+  document.getElementById('np-btn-cancelar').style.display='inline-block';
+  document.getElementById('view-admin').scrollIntoView({behavior:'smooth'});
+}
+function adminCancelarEdicaoProduto(){
+  produtoEditandoId=null;
+  document.getElementById('np-titulo').textContent='Novo produto';
+  document.getElementById('np-nome').value=''; document.getElementById('np-pontos').value=''; document.getElementById('np-estoque').value='';
+  document.getElementById('np-repetivel').checked=false;
+  document.getElementById('np-btn-salvar').textContent='+ Adicionar produto';
+  document.getElementById('np-btn-cancelar').style.display='none';
+}
+function adminCriarProduto(){
+  const nome=document.getElementById('np-nome').value.trim();
+  const pontos=parseFloat(document.getElementById('np-pontos').value);
+  const estoqueRaw=document.getElementById('np-estoque').value;
+  const icone_=document.getElementById('np-icone').value;
+  const repetivel=document.getElementById('np-repetivel').checked;
+  if(!nome||!pontos||pontos<=0){ toast('Dados incompletos','Preencha nome e pontos do produto.','erro'); return; }
+  const estoque = estoqueRaw===''?null:parseInt(estoqueRaw);
+
+  if(produtoEditandoId){
+    const id=produtoEditandoId;
+    const original=produtos[id];
+    const atualizado={ ...original, nome, pontos, estoque, icone:icone_, repetivel };
+    produtos[id]=atualizado;
+    adminCancelarEdicaoProduto();
+    renderTudo();
+    window.fbSalvar('marketplace/produtos/'+id, atualizado).then(res=>{
+      if(res.ok) toast('✓ Produto atualizado', nome+' foi salvo.');
+      else { produtos[id]=original; renderTudo(); avisarFalhaSalvar('a edição do produto'); }
+    });
+    return;
+  }
+
+  const id=gerarId('p');
+  const ordemMax=Math.max(0,...Object.values(produtos).map(p=>p.ordem||0));
+  const novo={ nome, pontos, estoque, ativo:true, icone:icone_, repetivel, ordem:ordemMax+1 };
+  produtos[id]=novo;
+  adminCancelarEdicaoProduto();
+  renderTudo();
+  window.fbSalvar('marketplace/produtos/'+id, novo).then(res=>{ if(!res.ok){ delete produtos[id]; renderTudo(); avisarFalhaSalvar('o produto '+nome); } });
+}
+function adminAlternarProduto(id){
+  const p=produtos[id]; if(!p) return;
+  p.ativo=!p.ativo;
+  renderTudo();
+  window.fbSalvar('marketplace/produtos/'+id, p).then(res=>{ if(!res.ok) avisarFalhaSalvar('essa alteração'); });
+}
+function adminExcluirProduto(id){
+  if(!confirm('Excluir este produto definitivamente?')) return;
+  if(produtoEditandoId===id) adminCancelarEdicaoProduto();
+  delete produtos[id];
+  renderTudo();
+  window.fbSalvar('marketplace/produtos/'+id, null).then(res=>{ if(!res.ok) avisarFalhaSalvar('a exclusão do produto'); });
+}
+
+/* ── Resgates: quem comprou o quê ── */
+function renderAdminResgates(){
+  const lista=Object.entries(resgates).sort((a,b)=>b[1].criadoEm-a[1].criadoEm);
+  const linhas=lista.map(([id,r])=>`
+    <tr>
+      <td>${fmtData(r.data)}</td>
+      <td>${escHtml(r.vendedora)}</td>
+      <td>${escHtml(r.produtoNome)}</td>
+      <td>${fmtPts(r.pontos)} pts</td>
+      <td><button class="btn-sm danger" onclick="adminExcluirResgate('${id}')">Estornar</button></td>
+    </tr>`).join('');
+  document.getElementById('admin-tabela-resgates').innerHTML = lista.length ?
+    `<thead><tr><th>Data</th><th>Vendedora</th><th>Prêmio</th><th>Pontos</th><th></th></tr></thead><tbody>${linhas}</tbody>`
+    : '<tbody><tr><td class="empty-state">Nenhum resgate realizado ainda.</td></tr></tbody>';
+}
+function adminExcluirResgate(id){
+  const r=resgates[id]; if(!r) return;
+  if(!confirm('Estornar este resgate? Os pontos voltam para o saldo de '+r.vendedora+'.')) return;
+  delete resgates[id];
+  renderTudo();
+  window.fbSalvar('marketplace/resgates/'+id, null).then(res=>{ if(!res.ok) avisarFalhaSalvar('o estorno do resgate'); });
+}
+
+function renderAdminVendedoras(){
+  const linhas=Object.keys(vendedoras).map(nome=>{
+    const v=vendedoras[nome];
+    return `<tr>
+      <td>${escHtml(nome)}</td>
+      <td>${fmtPts(saldoPontos(nome))} pts</td>
+      <td>${v.ativo!==false?'<span class="pill ok">Ativa</span>':'<span class="pill off">Inativa</span>'}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn-sm" onclick="adminAjustarPontos('${escHtml(nome)}')">Ajustar pontos</button>
+        <button class="btn-sm" onclick="adminAlternarVendedora('${escHtml(nome)}')">${v.ativo!==false?'Desativar':'Ativar'}</button>
+      </td>
+    </tr>`;
+  }).join('');
+  document.getElementById('admin-tabela-vendedoras').innerHTML = linhas ?
+    `<thead><tr><th>Nome</th><th>Saldo</th><th>Status</th><th></th></tr></thead><tbody>${linhas}</tbody>`
+    : '<tbody><tr><td class="empty-state">Nenhuma vendedora cadastrada.</td></tr></tbody>';
+
+  const ajustesLista=Object.values(ajustes).sort((a,b)=>b.criadoEm-a.criadoEm).slice(0,10);
+  document.getElementById('admin-ajustes-lista').innerHTML = ajustesLista.length ? ajustesLista.map(a=>`
+    <div class="venda-item">
+      <div class="info"><div class="cliente">${escHtml(a.vendedora)} — ${escHtml(a.motivo)}</div><div class="meta">${fmtData(a.data)}</div></div>
+      <div class="pts ${a.pontos<0?'neg':''}">${a.pontos>0?'+':''}${fmtPts(a.pontos)} pts</div>
+    </div>`).join('') : '<div class="empty-state">Nenhum ajuste manual feito ainda.</div>';
+}
+function adminCriarVendedora(){
+  const nome=document.getElementById('nv-nome').value.trim();
+  const user=document.getElementById('nv-user').value.trim().toLowerCase();
+  const pass=document.getElementById('nv-pass').value;
+  if(!nome||!user||!pass){ toast('Dados incompletos','Preencha nome, usuário e senha.','erro'); return; }
+  if(usuarios[user]){ toast('Usuário já existe','Escolha outro nome de usuário.','erro'); return; }
+  vendedoras[nome]={ativo:true};
+  usuarios[user]={senha:pass, papel:'vendedora', vendedora:nome};
+  document.getElementById('nv-nome').value=''; document.getElementById('nv-user').value=''; document.getElementById('nv-pass').value='';
+  renderTudo();
+  Promise.all([
+    window.fbSalvar('marketplace/vendedoras/'+nome, vendedoras[nome]),
+    window.fbSalvar('marketplace/usuarios/'+user, usuarios[user])
+  ]).then(resArr=>{ if(resArr.some(r=>!r.ok)) avisarFalhaSalvar('a nova vendedora'); });
+}
+function adminAlternarVendedora(nome){
+  if(!vendedoras[nome]) return;
+  vendedoras[nome].ativo = vendedoras[nome].ativo===false ? true : false;
+  renderTudo();
+  window.fbSalvar('marketplace/vendedoras/'+nome, vendedoras[nome]).then(res=>{ if(!res.ok) avisarFalhaSalvar('essa alteração'); });
+}
+function adminAjustarPontos(nome){
+  const qtdRaw=prompt('Ajuste de pontos para '+nome+' (use um número negativo pra descontar):','0');
+  if(qtdRaw===null) return;
+  const qtd=parseFloat(qtdRaw);
+  if(!qtd){ toast('Nada a fazer','Informe um valor diferente de zero.','erro'); return; }
+  const motivo=prompt('Motivo do ajuste (fica registrado no histórico dela):','Ajuste administrativo')||'Ajuste administrativo';
+  const id=gerarId('a');
+  const novo={ vendedora:nome, pontos:qtd, motivo, admin:usuarioAtual.login, data:hoje(), criadoEm:Date.now() };
+  ajustes[id]=novo;
+  renderTudo();
+  toast('✓ Ajuste aplicado', (qtd>0?'+':'')+fmtPts(qtd)+' pontos para '+nome);
+  window.fbSalvar('marketplace/ajustes/'+id, novo).then(res=>{ if(!res.ok){ delete ajustes[id]; renderTudo(); avisarFalhaSalvar('o ajuste de pontos'); } });
+}
+
+function renderAdminConfig(){
+  document.getElementById('cfg-conversao').value = config.conversao!==undefined ? config.conversao : 1;
+  const m=config.metasDupla||[15000,25000,50000];
+  document.getElementById('cfg-duo1').value=m[0]; document.getElementById('cfg-duo2').value=m[1]; document.getElementById('cfg-duo3').value=m[2];
+}
+function adminSalvarConfig(){
+  const conversao=parseFloat(document.getElementById('cfg-conversao').value)||1;
+  const metasDupla=[
+    parseFloat(document.getElementById('cfg-duo1').value)||15000,
+    parseFloat(document.getElementById('cfg-duo2').value)||25000,
+    parseFloat(document.getElementById('cfg-duo3').value)||50000
+  ];
+  config={conversao,metasDupla};
+  const statusEl=document.getElementById('cfg-save-status');
+  statusEl.textContent='Salvando…'; statusEl.className='save-status saving';
+  window.fbSalvar('marketplace/config', config).then(res=>{
+    if(res.ok){ statusEl.textContent='✓ Salvo'; statusEl.className='save-status ok'; setTimeout(()=>statusEl.textContent='',2500); renderTudo(); }
+    else { statusEl.textContent='⚠ Falha ao salvar'; statusEl.className='save-status erro'; avisarFalhaSalvar('as configurações'); }
+  });
+}
+
+/* ══════════════════════════════════════════════════
+   CARGA INICIAL — escuta o Firebase em tempo real
+   e semeia os dados padrão na primeira vez que roda.
+══════════════════════════════════════════════════ */
+function aguardarFirebase(){
+  if(!window.fbEscutar){ setTimeout(aguardarFirebase,80); return; }
+  iniciar();
+}
+function iniciar(){
+  window.fbCarregar('marketplace/produtos').then(existe=>{
+    if(existe) return;
+    const seedProdutos={
+      p1:{nome:'Pipoca',pontos:10000,estoque:null,ativo:true,icone:'pipoca',repetivel:false,ordem:1},
+      p2:{nome:'Hot Pocket',pontos:20000,estoque:null,ativo:true,icone:'hotpocket',repetivel:false,ordem:2},
+      p3:{nome:'Chocolate',pontos:20000,estoque:null,ativo:true,icone:'chocolate',repetivel:false,ordem:3},
+      p4:{nome:'Pringles',pontos:20000,estoque:null,ativo:true,icone:'pringles',repetivel:false,ordem:4},
+      p5:{nome:'Lasanha',pontos:35000,estoque:null,ativo:true,icone:'lasanha',repetivel:false,ordem:5}
+    };
+    const seedVendedoras={Keth:{ativo:true},Isa:{ativo:true},Ana:{ativo:true}};
+    const seedUsuarios={
+      keth:{senha:'keth123',papel:'vendedora',vendedora:'Keth'},
+      isa:{senha:'isa123',papel:'vendedora',vendedora:'Isa'},
+      ana:{senha:'ana123',papel:'vendedora',vendedora:'Ana'},
+      admin:{senha:'admin123',papel:'admin'}
+    };
+    const seedConfig={conversao:1,metasDupla:[15000,25000,50000]};
+    window.fbSalvar('marketplace/produtos', seedProdutos);
+    window.fbSalvar('marketplace/vendedoras', seedVendedoras);
+    window.fbSalvar('marketplace/usuarios', seedUsuarios);
+    window.fbSalvar('marketplace/config', seedConfig);
+  });
+
+  window.fbEscutar('marketplace/usuarios', d=>{ usuarios=d||{}; carregou.usuarios=true; if(usuarioAtual) renderTudo(); });
+  window.fbEscutar('marketplace/vendedoras', d=>{ vendedoras=d||{}; carregou.vendedoras=true; if(usuarioAtual) renderTudo(); });
+  window.fbEscutar('marketplace/vendas', d=>{ vendas=d||{}; carregou.vendas=true; if(usuarioAtual) renderTudo(); });
+  window.fbEscutar('marketplace/resgates', d=>{ resgates=d||{}; carregou.resgates=true; if(usuarioAtual) renderTudo(); });
+  window.fbEscutar('marketplace/produtos', d=>{ produtos=d||{}; carregou.produtos=true; if(usuarioAtual) renderTudo(); });
+  window.fbEscutar('marketplace/ajustes', d=>{ ajustes=d||{}; carregou.ajustes=true; if(usuarioAtual) renderTudo(); });
+  window.fbEscutar('marketplace/config', d=>{ config=d||{conversao:1,metasDupla:[15000,25000,50000]}; carregou.config=true; if(usuarioAtual) renderTudo(); });
+}
+aguardarFirebase();
+
+document.getElementById('login-pass').addEventListener('keydown', e=>{ if(e.key==='Enter') fazerLogin(); });
+document.getElementById('login-user').addEventListener('keydown', e=>{ if(e.key==='Enter') fazerLogin(); });
+</script>
+</body>
+</html>
